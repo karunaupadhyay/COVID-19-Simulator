@@ -1,0 +1,115 @@
+class Person {
+  static final float size = 7, maxSpeed = 1.5;
+  private float x, y, vx, vy, ax, ay;
+  private int startTime = 0, endTime;
+  boolean infected = false, patientZero = false, onRoad = false;
+  private int accerationTime = 50;
+  House house;
+  Person(House house) {
+    this.house = house;
+    x = random(house.x + size, house.x + house.w - size);
+    y = random(house.y + size, house.y + house.h - size);
+    resetSpeed();
+  }
+  
+  Person(Person p, House h) {
+    this.house = h;
+    this.x = p.x;
+    this.y = p.y;
+    this.infected = p.infected;
+    this.patientZero = p.patientZero;
+    this.onRoad = p.onRoad;
+    this.vx = p.vx;
+    this.vy = p.vy;
+    this.ax = p.ax;
+    this.ay = p.ay;
+    this.startTime = p.startTime;
+    this.endTime = p.endTime;
+  }
+  
+  Person(float x, float y) {
+    this.x = x;
+    this.y = y;
+    House nearestHouse = new House(0, 0, 0, 0);
+    float nearestDist = Float.MAX_VALUE;
+    for (House h : currentSimulation.houses) {
+      if (h.contains(x, y)) {
+        this.house = h;
+        return;
+      }
+      float curDist = dist(x, y, h.centerX, h.centerY);
+      if (curDist < nearestDist) {
+        nearestDist = curDist;
+        nearestHouse = h;
+      }
+    }
+    this.house = nearestHouse;
+  }
+  void resetSpeed() {
+    if (startTime < endTime) {
+      return;
+    }
+    float ang = random(0, 2 * PI), magnitude = random(-maxSpeed, maxSpeed);
+    float newVx = cos(ang) * magnitude;
+    float newVy = sin(ang) * magnitude;
+    ax = (newVx - vx)/accerationTime;
+    ay = (newVy - vy)/accerationTime;
+    endTime = startTime + accerationTime;
+  }
+  
+  void setPatientZero() {
+    patientZero = true;
+    infected = true;
+  }
+  
+  void update() {
+    if (!house.contains(x, y, size)) { 
+      onRoad = true;
+      float dx = (house.centerX - x)/20;
+      float dy = (house.centerY - y)/20;
+      float mag = sqrt(dx * dx + dy * dy);
+      dx *= maxSpeed/mag;
+      dy *= maxSpeed/mag;
+      x += dx;
+      y += dy;
+      return;
+    } else {
+      onRoad = false;
+    }
+    startTime++;
+    if (startTime >= endTime) {
+      ax = 0;
+      ay = 0;
+    }
+    vx += ax;
+    vy += ay;
+    float nx = x + vx, ny = y + vy;
+    if (nx - size > 0 && nx - size > house.x && nx + size < width && nx + size < house.x + house.w) {
+      x = nx;
+    } else {
+      vx = vy = 0;
+    }
+    if (ny - size > 0 && ny - size > house.y && ny + size < height && ny + size < house.y + house.h) {
+      y = ny; 
+    } else {
+      vx = vy = 0;
+    }
+    if (ax == 0 && ay == 0 && random(0, 1) < 0.05) {
+      resetSpeed();
+    }
+  }
+  void display() {
+    strokeWeight(2);
+    if (infected) {
+      if (patientZero) {
+        fill(255, 119, 0);
+      } else {
+        fill(255, 0, 0);
+      }
+    } else {
+      fill(255, 255, 255);
+      fill(242, 205, 90);
+    }
+    ellipse(x, y, 2 * size, 2 * size); 
+  }
+}
